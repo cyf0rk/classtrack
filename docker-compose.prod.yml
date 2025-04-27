@@ -1,0 +1,40 @@
+services:
+  app:
+    container_name: classtrack-prod
+    image: classtrack-prod
+    restart: unless-stopped
+    build:
+      dockerfile: Dockerfile
+      context: .
+      target: production
+    env_file:
+      - .env.production.local
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    networks:
+      - app-network
+    depends_on:
+      - db
+
+  db:
+    container_name: classtrack-db-prod
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+volumes:
+  pgdata_prod:
+
+networks:
+  app-network:
+    name: app-network-prod
+    driver: bridge
