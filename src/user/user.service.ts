@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import { User } from 'db';
+import { Role } from '../auth/roles.enum';
 
 type UserResponse = Omit<User, 'password'>;
 
@@ -17,8 +18,15 @@ export class UserService {
   async createUser(
     email: string,
     password: string,
-    role = 'user',
+    role = Role.User,
   ): Promise<UserResponse> {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    if (existingUser) {
+      throw new Error('User with this email already exists');
+    }
+
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
     const user = await this.prisma.user.create({
