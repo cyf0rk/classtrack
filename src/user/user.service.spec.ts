@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
 import { PrismaService } from '../database/prisma.service';
+import { Role } from '../auth/roles.enum';
 import * as bcrypt from 'bcryptjs';
 
 describe('UserService', () => {
@@ -130,7 +131,7 @@ describe('UserService', () => {
       const result = await service.createUser(
         inputEmail,
         inputPassword,
-        'admin',
+        Role.Admin,
       );
       const createSpy = jest
         .spyOn(prisma.user, 'create')
