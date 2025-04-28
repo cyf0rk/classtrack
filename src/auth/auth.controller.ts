@@ -11,7 +11,11 @@ export class AuthController {
   async register(
     @Body() body: { email: string; password: string; role?: Role },
   ) {
-    return this.authService.register(body.email, body.password, body.role || Role.User);
+    return this.authService.register(
+      body.email,
+      body.password,
+      body.role || Role.User,
+    );
   }
 
   @UseGuards(LocalAuthGuard)
