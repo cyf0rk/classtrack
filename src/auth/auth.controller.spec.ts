@@ -51,27 +51,6 @@ describe('AuthController', () => {
       expect(mockAuthService.register).toHaveBeenCalledWith(
         'test@example.com',
         'password123',
-        Role.USER,
-      );
-    });
-
-    it('should handle registration with custom role', async () => {
-      mockAuthService.register.mockResolvedValue({
-        ...mockUser,
-        role: Role.ADMIN,
-      });
-
-      const result = await controller.register({
-        email: 'admin@example.com',
-        password: 'password123',
-        role: Role.ADMIN as Role,
-      });
-
-      expect(result.role).toBe(Role.ADMIN);
-      expect(mockAuthService.register).toHaveBeenCalledWith(
-        'admin@example.com',
-        'password123',
-        Role.ADMIN,
       );
     });
 

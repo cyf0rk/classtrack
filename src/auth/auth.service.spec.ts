@@ -113,32 +113,6 @@ describe('AuthService', () => {
       expect(mockUserService.createUser).toHaveBeenCalledWith(
         'test@example.com',
         'password123',
-        Role.USER,
-      );
-    });
-
-    it('should register a user with custom role', async () => {
-      const mockUser: UserResponse = {
-        id: 1,
-        email: 'admin@example.com',
-        role: Role.ADMIN,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      mockUserService.createUser.mockResolvedValue(mockUser);
-
-      const result = await service.register(
-        'admin@example.com',
-        'password123',
-        Role.ADMIN,
-      );
-
-      expect(result).toEqual(mockUser);
-      expect(mockUserService.createUser).toHaveBeenCalledWith(
-        'admin@example.com',
-        'password123',
-        Role.ADMIN,
       );
     });
   });
