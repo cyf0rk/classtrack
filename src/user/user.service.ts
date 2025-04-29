@@ -16,7 +16,7 @@ export class UserService {
   async createUser(
     email: string,
     password: string,
-    role: Role = Role.USER,
+    role?: Role,
   ): Promise<UserResponse> {
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
@@ -31,7 +31,7 @@ export class UserService {
       data: {
         email,
         password: hashedPassword,
-        role,
+        role: role || Role.USER,
       },
     });
     return this.omitPassword(user);
