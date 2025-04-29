@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Request, UseGuards } from '@nestjs/common';
+import { Role } from 'db';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
-import { Role } from './roles.enum';
 
 @Controller('auth')
 export class AuthController {
@@ -14,7 +14,7 @@ export class AuthController {
     return this.authService.register(
       body.email,
       body.password,
-      body.role || Role.User,
+      body.role || Role.USER,
     );
   }
 

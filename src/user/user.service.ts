@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../database/prisma.service';
 import * as bcrypt from 'bcryptjs';
-import { User } from 'db';
-import { Role } from '../auth/roles.enum';
-
-type UserResponse = Omit<User, 'password'>;
+import { User, Role } from 'db';
+import { PrismaService } from '../database/prisma.service';
+import type { UserResponse } from './types';
 
 @Injectable()
 export class UserService {
@@ -18,7 +16,7 @@ export class UserService {
   async createUser(
     email: string,
     password: string,
-    role = Role.User,
+    role: Role = Role.USER,
   ): Promise<UserResponse> {
     const existingUser = await this.prisma.user.findUnique({
       where: { email },

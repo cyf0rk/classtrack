@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { JwtService } from '@nestjs/jwt';
+import { Role } from 'db';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
-import { JwtService } from '@nestjs/jwt';
-import { User } from 'db';
-import { Role } from './roles.enum';
+import type { UserResponse } from '../user/types';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -41,10 +41,10 @@ describe('AuthService', () => {
 
   describe('validateUser', () => {
     it('should validate user credentials successfully', async () => {
-      const mockUser: Omit<User, 'password'> = {
+      const mockUser: UserResponse = {
         id: 1,
         email: 'test@example.com',
-        role: 'user',
+        role: Role.USER,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -79,8 +79,7 @@ describe('AuthService', () => {
     it('should generate JWT token for valid user', async () => {
       const mockUser = {
         email: 'test@example.com',
-        password: 'hashedPassword',
-        role: 'user',
+        password: 'password123',
       };
 
       const mockToken = 'mock.jwt.token';
@@ -92,17 +91,16 @@ describe('AuthService', () => {
       expect(mockJwtService.sign).toHaveBeenCalledWith({
         email: mockUser.email,
         password: mockUser.password,
-        role: mockUser.role,
       });
     });
   });
 
   describe('register', () => {
     it('should register a new user successfully', async () => {
-      const mockUser: Omit<User, 'password'> = {
+      const mockUser: UserResponse = {
         id: 1,
         email: 'test@example.com',
-        role: 'user',
+        role: Role.USER,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -115,15 +113,15 @@ describe('AuthService', () => {
       expect(mockUserService.createUser).toHaveBeenCalledWith(
         'test@example.com',
         'password123',
-        'user',
+        Role.USER,
       );
     });
 
     it('should register a user with custom role', async () => {
-      const mockUser: Omit<User, 'password'> = {
+      const mockUser: UserResponse = {
         id: 1,
         email: 'admin@example.com',
-        role: 'admin',
+        role: Role.ADMIN,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -133,14 +131,14 @@ describe('AuthService', () => {
       const result = await service.register(
         'admin@example.com',
         'password123',
-        Role.Admin,
+        Role.ADMIN,
       );
 
       expect(result).toEqual(mockUser);
       expect(mockUserService.createUser).toHaveBeenCalledWith(
         'admin@example.com',
         'password123',
-        'admin',
+        Role.ADMIN,
       );
     });
   });

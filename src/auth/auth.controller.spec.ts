@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Role } from 'db';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { User } from 'db';
-import { Role } from './roles.enum';
+import type { UserResponse } from 'src/user/types';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -31,10 +31,10 @@ describe('AuthController', () => {
   });
 
   describe('register', () => {
-    const mockUser: Omit<User, 'password'> = {
+    const mockUser: UserResponse = {
       id: 1,
       email: 'test@example.com',
-      role: 'user',
+      role: Role.USER as Role,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -51,27 +51,27 @@ describe('AuthController', () => {
       expect(mockAuthService.register).toHaveBeenCalledWith(
         'test@example.com',
         'password123',
-        'user',
+        Role.USER,
       );
     });
 
     it('should handle registration with custom role', async () => {
       mockAuthService.register.mockResolvedValue({
         ...mockUser,
-        role: 'admin',
+        role: Role.ADMIN,
       });
 
       const result = await controller.register({
         email: 'admin@example.com',
         password: 'password123',
-        role: Role.Admin,
+        role: Role.ADMIN as Role,
       });
 
-      expect(result.role).toBe('admin');
+      expect(result.role).toBe(Role.ADMIN);
       expect(mockAuthService.register).toHaveBeenCalledWith(
         'admin@example.com',
         'password123',
-        'admin',
+        Role.ADMIN,
       );
     });
 
@@ -92,7 +92,7 @@ describe('AuthController', () => {
     const mockUser = {
       email: 'test@example.com',
       password: 'hashedPassword',
-      role: 'user',
+      role: Role.USER,
     };
 
     it('should login successfully and return access token', async () => {

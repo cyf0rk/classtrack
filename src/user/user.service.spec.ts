@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import * as bcrypt from 'bcryptjs';
+import { Role } from 'db';
 import { UserService } from './user.service';
 import { PrismaService } from '../database/prisma.service';
-import { Role } from '../auth/roles.enum';
-import * as bcrypt from 'bcryptjs';
 
 describe('UserService', () => {
   let service: UserService;
@@ -40,7 +40,7 @@ describe('UserService', () => {
         id: 1,
         email: 'test@example.com',
         password: 'hashed',
-        role: 'user',
+        role: Role.USER,
         createdAt: mockDate,
         updatedAt: mockDate,
         applications: [],
@@ -83,7 +83,7 @@ describe('UserService', () => {
         id: 2,
         email: inputEmail,
         password: hashedPassword,
-        role: 'user',
+        role: Role.USER,
         createdAt: mockDate,
         updatedAt: mockDate,
         applications: [],
@@ -100,7 +100,7 @@ describe('UserService', () => {
         data: {
           email: inputEmail,
           password: hashedPassword,
-          role: 'user',
+          role: Role.USER,
         },
       });
 
@@ -120,7 +120,7 @@ describe('UserService', () => {
         id: 3,
         email: inputEmail,
         password: hashedPassword,
-        role: 'admin',
+        role: Role.ADMIN,
         createdAt: mockDate,
         updatedAt: mockDate,
         applications: [],
@@ -131,7 +131,7 @@ describe('UserService', () => {
       const result = await service.createUser(
         inputEmail,
         inputPassword,
-        Role.Admin,
+        Role.ADMIN,
       );
       const createSpy = jest
         .spyOn(prisma.user, 'create')
@@ -141,7 +141,7 @@ describe('UserService', () => {
         data: {
           email: inputEmail,
           password: hashedPassword,
-          role: 'admin',
+          role: Role.ADMIN,
         },
       });
 
@@ -160,7 +160,7 @@ describe('UserService', () => {
         id: 4,
         email,
         password: hashedPassword,
-        role: 'user',
+        role: Role.USER,
         createdAt: mockDate,
         updatedAt: mockDate,
         applications: [],
@@ -196,7 +196,7 @@ describe('UserService', () => {
         id: 5,
         email,
         password: hashedPassword,
-        role: 'user',
+        role: Role.USER,
         createdAt: mockDate,
         updatedAt: mockDate,
         applications: [],
