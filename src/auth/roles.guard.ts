@@ -7,7 +7,6 @@ import {
 import { Reflector } from '@nestjs/core';
 import { Role } from 'db';
 import { ROLES_KEY } from './roles.decorator';
-import type { UserRequest } from '../user/types';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -22,10 +21,11 @@ export class RolesGuard implements CanActivate {
       return true;
     }
     const request = context.switchToHttp().getRequest();
-    const { user } = request as UserRequest;
-    if (!user) {
-      throw new UnauthorizedException('User not found in request');
+    const { body } = request;
+    if (!body) {
+      throw new UnauthorizedException('User data not provided');
     }
-    return requiredRoles.some((role) => user.role === role.toString());
+    console.log(body.role);
+    return requiredRoles.some((role) => body.role === role);
   }
 }
