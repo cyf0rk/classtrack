@@ -21,10 +21,12 @@ export class RolesGuard implements CanActivate {
       return true;
     }
     const request = context.switchToHttp().getRequest();
-    const { body } = request;
-    if (!body) {
+    const user = request.user;
+    
+    if (!user) {
       throw new UnauthorizedException('User data not provided');
     }
-    return requiredRoles.some((role) => body.role === role);
+    
+    return requiredRoles.some((role) => user.role === role);
   }
 }
