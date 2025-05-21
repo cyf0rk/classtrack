@@ -10,15 +10,12 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async validateUser(
-    email: string,
-    password: string,
-  ): Promise<UserResponse | null> {
-    return this.userService.validateUser(email, password);
-  }
-
-  async login(user: any) {
-    const payload = { email: user.email, password: user.password };
+  login(user: UserResponse) {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
     return {
       access_token: this.jwtService.sign(payload),
     };
