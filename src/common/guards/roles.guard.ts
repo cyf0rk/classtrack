@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from 'db';
-import { ROLES_KEY } from './roles.decorator';
+import { ROLES_KEY } from '../decorators/roles.decorator';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -25,7 +25,6 @@ export class RolesGuard implements CanActivate {
     if (!body) {
       throw new UnauthorizedException('User data not provided');
     }
-    console.log(body.role);
     return requiredRoles.some((role) => body.role === role);
   }
 }

@@ -4,7 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
-import { RolesGuard } from './auth/roles.guard';
+import { RolesGuard } from './common/guards/roles.guard';
 import { AppConfigModule } from './config/config.module';
 
 @Module({
