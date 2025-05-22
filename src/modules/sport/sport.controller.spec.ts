@@ -3,21 +3,21 @@ import { SportController } from './sport.controller';
 import { SportService } from './sport.service';
 import { CreateSportDto, UpdateSportDto } from './dto';
 import { Role } from 'db';
-import { ExecutionContext } from '@nestjs/common';
+import { ExecutionContext, ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { INestApplication } from '@nestjs/common';
+import * as request from 'supertest';
 
 describe('SportController', () => {
-  let controller: SportController;
+  let app: INestApplication;
   let service: SportService;
 
   const mockSport = {
     id: 1,
     name: 'Basketball',
     description: 'A team sport',
-    createdAt: new Date(),
-    updatedAt: new Date(),
   };
 
   const mockSportService = {
@@ -28,10 +28,18 @@ describe('SportController', () => {
     remove: jest.fn(),
   };
 
+  // Mock request object that we can modify for different tests
+  const mockRequest: { user: { role: Role } | null } = {
+    user: { role: Role.ADMIN },
+  };
+
   const mockJwtAuthGuard = {
     canActivate: (context: ExecutionContext) => {
       const request = context.switchToHttp().getRequest();
-      request.user = { role: Role.ADMIN };
+      if (!mockRequest.user) {
+        throw new UnauthorizedException('No user found');
+      }
+      Object.assign(request, mockRequest);
       return true;
     },
   };
@@ -39,8 +47,15 @@ describe('SportController', () => {
   const mockRolesGuard = {
     canActivate: (context: ExecutionContext) => {
       const request = context.switchToHttp().getRequest();
+      if (!request.user) {
+        throw new UnauthorizedException('No user found');
+      }
       const requiredRoles = new Reflector().get('roles', context.getHandler());
-      return requiredRoles.includes(request.user.role);
+      if (!requiredRoles) return true;
+      if (!requiredRoles.includes(request.user.role)) {
+        throw new ForbiddenException('Insufficient permissions');
+      }
+      return true;
     },
   };
 
@@ -60,16 +75,20 @@ describe('SportController', () => {
       .useValue(mockRolesGuard)
       .compile();
 
-    controller = module.get<SportController>(SportController);
+    app = module.createNestApplication();
+    await app.init();
     service = module.get<SportService>(SportService);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.clearAllMocks();
+    // Reset mock request to admin role after each test
+    mockRequest.user = { role: Role.ADMIN };
+    await app.close();
   });
 
   it('should be defined', () => {
-    expect(controller).toBeDefined();
+    expect(app).toBeDefined();
   });
 
   describe('create', () => {
@@ -78,43 +97,40 @@ describe('SportController', () => {
       description: 'A team sport',
     };
 
-    it('should create a new sport', async () => {
+    it('should create a new sport when user is admin', async () => {
       mockSportService.create.mockResolvedValue(mockSport);
 
-      const result = await controller.create(createDto);
+      const response = await request(app.getHttpServer())
+        .post('/sports')
+        .send(createDto)
+        .expect(201);
 
+      expect(response.body).toEqual(mockSport);
       expect(service.create).toHaveBeenCalledWith(createDto);
-      expect(result).toEqual(mockSport);
     });
 
-    it('should require admin role', async () => {
-      // Override the mock guard to simulate non-admin user
-      const nonAdminGuard = {
-        canActivate: (context: ExecutionContext) => {
-          const request = context.switchToHttp().getRequest();
-          request.user = { role: Role.USER };
-          return false;
-        },
-      };
+    it('should return 403 when user is not admin', async () => {
+      mockRequest.user = { role: Role.USER };
+      mockSportService.create.mockResolvedValue(mockSport);
 
-      const module: TestingModule = await Test.createTestingModule({
-        controllers: [SportController],
-        providers: [
-          {
-            provide: SportService,
-            useValue: mockSportService,
-          },
-        ],
-      })
-        .overrideGuard(JwtAuthGuard)
-        .useValue(mockJwtAuthGuard)
-        .overrideGuard(RolesGuard)
-        .useValue(nonAdminGuard)
-        .compile();
+      await request(app.getHttpServer())
+        .post('/sports')
+        .send(createDto)
+        .expect(403);
 
-      const controller = module.get<SportController>(SportController);
+      expect(service.create).not.toHaveBeenCalled();
+    });
 
-      await expect(controller.create(createDto)).rejects.toThrow();
+    it('should return 401 when no user is present', async () => {
+      mockRequest.user = null;
+      mockSportService.create.mockResolvedValue(mockSport);
+
+      await request(app.getHttpServer())
+        .post('/sports')
+        .send(createDto)
+        .expect(401);
+
+      expect(service.create).not.toHaveBeenCalled();
     });
   });
 
@@ -123,19 +139,23 @@ describe('SportController', () => {
       const mockSports = [mockSport];
       mockSportService.findAll.mockResolvedValue(mockSports);
 
-      const result = await controller.findAll();
+      const response = await request(app.getHttpServer())
+        .get('/sports')
+        .expect(200);
 
+      expect(response.body).toEqual(mockSports);
       expect(service.findAll).toHaveBeenCalled();
-      expect(result).toEqual(mockSports);
     });
 
     it('should return an empty array when no sports exist', async () => {
       mockSportService.findAll.mockResolvedValue([]);
 
-      const result = await controller.findAll();
+      const response = await request(app.getHttpServer())
+        .get('/sports')
+        .expect(200);
 
+      expect(response.body).toEqual([]);
       expect(service.findAll).toHaveBeenCalled();
-      expect(result).toEqual([]);
     });
   });
 
@@ -143,16 +163,21 @@ describe('SportController', () => {
     it('should return a sport by id', async () => {
       mockSportService.findOne.mockResolvedValue(mockSport);
 
-      const result = await controller.findOne(1);
+      const response = await request(app.getHttpServer())
+        .get('/sports/1')
+        .expect(200);
 
+      expect(response.body).toEqual(mockSport);
       expect(service.findOne).toHaveBeenCalledWith(1);
-      expect(result).toEqual(mockSport);
     });
 
-    it('should handle non-existent sport', async () => {
-      mockSportService.findOne.mockRejectedValue(new Error('Not found'));
+    it('should return 404 for non-existent sport', async () => {
+      mockSportService.findOne.mockRejectedValue(new NotFoundException('Sport not found'));
 
-      await expect(controller.findOne(999)).rejects.toThrow();
+      await request(app.getHttpServer())
+        .get('/sports/999')
+        .expect(404);
+
       expect(service.findOne).toHaveBeenCalledWith(999);
     });
   });
@@ -162,85 +187,76 @@ describe('SportController', () => {
       name: 'Updated Basketball',
     };
 
-    it('should update a sport', async () => {
+    it('should update a sport when user is admin', async () => {
       const updatedSport = { ...mockSport, ...updateDto };
       mockSportService.update.mockResolvedValue(updatedSport);
 
-      const result = await controller.update(1, updateDto);
+      const response = await request(app.getHttpServer())
+        .patch('/sports/1')
+        .send(updateDto)
+        .expect(200);
 
+      expect(response.body).toEqual(updatedSport);
       expect(service.update).toHaveBeenCalledWith(1, updateDto);
-      expect(result).toEqual(updatedSport);
     });
 
-    it('should require admin role', async () => {
-      // Override the mock guard to simulate non-admin user
-      const nonAdminGuard = {
-        canActivate: (context: ExecutionContext) => {
-          const request = context.switchToHttp().getRequest();
-          request.user = { role: Role.USER };
-          return false;
-        },
-      };
+    it('should return 403 when user is not admin', async () => {
+      mockRequest.user = { role: Role.USER };
+      mockSportService.update.mockResolvedValue(mockSport);
 
-      const module: TestingModule = await Test.createTestingModule({
-        controllers: [SportController],
-        providers: [
-          {
-            provide: SportService,
-            useValue: mockSportService,
-          },
-        ],
-      })
-        .overrideGuard(JwtAuthGuard)
-        .useValue(mockJwtAuthGuard)
-        .overrideGuard(RolesGuard)
-        .useValue(nonAdminGuard)
-        .compile();
+      await request(app.getHttpServer())
+        .patch('/sports/1')
+        .send(updateDto)
+        .expect(403);
 
-      const controller = module.get<SportController>(SportController);
+      expect(service.update).not.toHaveBeenCalled();
+    });
 
-      await expect(controller.update(1, updateDto)).rejects.toThrow();
+    it('should return 401 when no user is present', async () => {
+      mockRequest.user = null;
+      mockSportService.update.mockResolvedValue(mockSport);
+
+      await request(app.getHttpServer())
+        .patch('/sports/1')
+        .send(updateDto)
+        .expect(401);
+
+      expect(service.update).not.toHaveBeenCalled();
     });
   });
 
   describe('remove', () => {
-    it('should delete a sport', async () => {
+    it('should delete a sport when user is admin', async () => {
       mockSportService.remove.mockResolvedValue(mockSport);
 
-      const result = await controller.remove(1);
+      const response = await request(app.getHttpServer())
+        .delete('/sports/1')
+        .expect(200);
 
+      expect(response.body).toEqual(mockSport);
       expect(service.remove).toHaveBeenCalledWith(1);
-      expect(result).toEqual(mockSport);
     });
 
-    it('should require admin role', async () => {
-      // Override the mock guard to simulate non-admin user
-      const nonAdminGuard = {
-        canActivate: (context: ExecutionContext) => {
-          const request = context.switchToHttp().getRequest();
-          request.user = { role: Role.USER };
-          return false;
-        },
-      };
+    it('should return 403 when user is not admin', async () => {
+      mockRequest.user = { role: Role.USER };
+      mockSportService.remove.mockResolvedValue(mockSport);
 
-      const module: TestingModule = await Test.createTestingModule({
-        controllers: [SportController],
-        providers: [
-          {
-            provide: SportService,
-            useValue: mockSportService,
-          },
-        ],
-      })
-        .overrideGuard(JwtAuthGuard)
-        .useValue(mockJwtAuthGuard)
-        .overrideGuard(RolesGuard)
-        .useValue(nonAdminGuard)
-        .compile();
+      await request(app.getHttpServer())
+        .delete('/sports/1')
+        .expect(403);
 
-      const controller = module.get<SportController>(SportController);
+      expect(service.remove).not.toHaveBeenCalled();
+    });
 
-      await expect(controller.remove(1)).rejects.toThrow();
+    it('should return 401 when no user is present', async () => {
+      mockRequest.user = null;
+      mockSportService.remove.mockResolvedValue(mockSport);
+
+      await request(app.getHttpServer())
+        .delete('/sports/1')
+        .expect(401);
+
+      expect(service.remove).not.toHaveBeenCalled();
     });
   });
 });
