@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcryptjs';
 import { Role } from 'db';
 import { UserService } from './user.service';
-import { PrismaService } from '../database/prisma.service';
+import { PrismaService } from '../../database/prisma.service';
 
 describe('UserService', () => {
   let service: UserService;
