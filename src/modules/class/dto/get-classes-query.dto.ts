@@ -15,15 +15,22 @@ export class GetClassesQueryDto {
       const rawValue = obj[key] as string | undefined;
       if (!rawValue) return undefined;
 
+      // If format is invalid, return undefined
       if (!/^[a-zA-Z]+(,[a-zA-Z]+)*$/.test(rawValue)) {
         return undefined;
       }
 
-      // Convert string to array
-      return rawValue
+      // Convert string to array and filter out empty strings
+      const sports = rawValue
         .split(',')
         .map((sport) => sport.trim().toLowerCase())
         .filter((sport) => sport.length > 0);
+
+      if (sports.length === 0) {
+        return undefined;
+      }
+
+      return sports;
     },
     { toClassOnly: true },
   )
