@@ -15,21 +15,21 @@ export class ClassService {
       schedule: JSON.parse(JSON.stringify(dto.schedule)),
       sport: {
         connect: {
-          id: sportId
-        }
-      }
+          id: sportId,
+        },
+      },
     };
   }
 
   // Convert update class dto to database model
   private toPrismaUpdateInput(dto: UpdateClassDto): Prisma.ClassUpdateInput {
     const updateData: any = { ...dto };
-    
+
     if (dto.sportId !== undefined) {
       updateData.sport = {
         connect: {
-          id: dto.sportId
-        }
+          id: dto.sportId,
+        },
       };
       delete updateData.sportId;
     }
