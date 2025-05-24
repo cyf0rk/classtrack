@@ -54,7 +54,6 @@ export class ClassController {
 
   @Get()
   @ApiOperation({ summary: 'Get all classes' })
-  @ApiQuery({ type: GetClassesQueryDto })
   @ApiResponse({
     status: 200,
     description: 'Return all classes with their associated sports.',

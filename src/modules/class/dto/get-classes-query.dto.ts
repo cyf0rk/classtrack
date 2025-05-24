@@ -6,7 +6,7 @@ export class GetClassesQueryDto {
   @ApiPropertyOptional({
     description:
       'Sport name or comma-separated list of sports to filter classes by',
-    example: 'basketball or basketball,football',
+    example: 'basketball,football',
     type: String,
   })
   @IsOptional()
