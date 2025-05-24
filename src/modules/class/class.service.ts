@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { CreateClassDto, UpdateClassDto } from './dto';
+import { CreateClassDto, UpdateClassDto, GetClassesQueryDto } from './dto';
 import { Prisma, Class, Sport } from '../../generated/prisma';
+
+type ClassWithSport = Class & { sport: Sport };
 
 @Injectable()
 export class ClassService {
@@ -49,10 +51,23 @@ export class ClassService {
     });
   }
 
-  async findAll(): Promise<(Class & { sport: Sport })[]> {
-    return this.prisma.class.findMany({
+  async findAll(query?: GetClassesQueryDto): Promise<ClassWithSport[]> {
+    const findManyArgs: Prisma.ClassFindManyArgs = {
       include: { sport: true },
-    });
+    };
+    
+    // Only add where clause if sports are provided
+    if (query?.sports && query.sports.length > 0) {
+      findManyArgs.where = {
+        sport: {
+          name: {
+            in: query.sports,
+          },
+        },
+      };
+    }
+
+    return this.prisma.class.findMany(findManyArgs) as Promise<ClassWithSport[]>;
   }
 
   async findOne(id: number): Promise<Class & { sport: Sport }> {
