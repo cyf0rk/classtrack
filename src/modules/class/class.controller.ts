@@ -38,10 +38,7 @@ export class ClassController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update class' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateClassDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateClassDto) {
     return this.service.update(id, dto);
   }
 
