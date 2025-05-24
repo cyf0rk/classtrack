@@ -5,6 +5,9 @@ import {
   Body,
   UseGuards,
   Request,
+  Patch,
+  Param,
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,6 +22,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from 'db';
 import type { UserResponse } from '../user/types';
+import { UpdateApplicationDto } from './dto/update-application.dto';
 
 interface RequestWithUser extends Request {
   user: UserResponse;
@@ -45,7 +49,7 @@ export class ApplicationController {
     @Request() req: RequestWithUser,
     @Body() dto: CreateApplicationDto,
   ) {
-    return this.applicationService.apply(req.user.id, dto);
+    return await this.applicationService.apply(req.user.id, dto);
   }
 
   @Get('me')
@@ -55,6 +59,15 @@ export class ApplicationController {
     description: "Returns list of user's applications",
   })
   async findMyApplications(@Request() req: RequestWithUser) {
-    return this.applicationService.findUserApplications(req.user.id);
+    return await this.applicationService.findUserApplications(req.user.id);
+  }
+
+  @Patch(':id/status')
+  @Roles(Role.ADMIN)
+  async updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateApplicationDto,
+  ) {
+    return await this.applicationService.updateStatus(id, dto);
   }
 }
