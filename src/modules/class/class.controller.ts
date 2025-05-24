@@ -17,6 +17,7 @@ import {
   ApiParam,
   ApiBody,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ClassService } from './class.service';
 import { CreateClassDto, UpdateClassDto } from './dto';
@@ -117,6 +118,17 @@ export class ClassController {
   @Get(':id/applications')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all applications for a class (admin only)' })
+  @ApiParam({ name: 'id', type: 'number', description: 'Class ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all applications for the specified class',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid ID format' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Class not found' })
   async findClassApplications(@Param('id', ParseIntPipe) id: number) {
     return await this.applicationService.findClassApplications(id);
   }
