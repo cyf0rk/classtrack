@@ -49,9 +49,13 @@ export class ClassController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid sports format. Must be comma-separated alphabetic values.',
+    description:
+      'Invalid sports format. Must be comma-separated alphabetic values.',
   })
   findAll(@Query() query: GetClassesQueryDto) {
+    if (!query?.sports) {
+      return this.service.findAll();
+    }
     return this.service.findAll(query);
   }
 
