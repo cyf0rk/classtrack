@@ -37,6 +37,9 @@ export class ClassController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new class' })
   @ApiBody({ type: CreateClassDto })
   @ApiResponse({
@@ -84,6 +87,9 @@ export class ClassController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a class' })
   @ApiParam({ name: 'id', type: 'number', description: 'Class ID' })
   @ApiBody({ type: UpdateClassDto })
@@ -102,6 +108,9 @@ export class ClassController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a class' })
   @ApiParam({ name: 'id', type: 'number', description: 'Class ID' })
   @ApiResponse({
