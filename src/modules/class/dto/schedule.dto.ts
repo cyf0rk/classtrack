@@ -15,12 +15,12 @@ export const DAYS_OF_WEEK = [
 export type DayOfWeek = (typeof DAYS_OF_WEEK)[number];
 
 // Helper function to transform sessions
-const transformSessions = (value: any) => {
+const transformSessions = (value: unknown): SessionDto[] | undefined => {
   if (value === undefined) return undefined;
   if (!Array.isArray(value)) {
     throw new Error('Invalid sessions format. Expected array.');
   }
-  return value;
+  return value as SessionDto[];
 };
 
 // Custom decorator for day validation
