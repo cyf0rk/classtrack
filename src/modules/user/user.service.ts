@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { User, Role } from 'db';
 import { PrismaService } from '../../database/prisma.service';
@@ -22,7 +22,7 @@ export class UserService {
       where: { email },
     });
     if (existingUser) {
-      throw new Error('User with this email already exists');
+      throw new ConflictException('User with this email already exists');
     }
 
     const salt = await bcrypt.genSalt();
