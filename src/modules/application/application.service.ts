@@ -135,4 +135,30 @@ export class ApplicationService {
       },
     });
   }
+
+  async findClassApplications(classId: number) {
+    const classData = await this.prisma.class.findUnique({
+      where: { id: classId },
+    });
+
+    if (!classData) {
+      throw new NotFoundException('Class not found');
+    }
+
+    return this.prisma.application.findMany({
+      where: { classId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
 }
