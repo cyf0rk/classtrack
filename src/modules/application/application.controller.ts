@@ -6,7 +6,12 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { ApplicationService } from './application.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -28,6 +33,14 @@ export class ApplicationController {
   constructor(private readonly applicationService: ApplicationService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Apply for a class' })
+  @ApiResponse({
+    status: 201,
+    description: 'Successfully applied for the class',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid request or class is full' })
+  @ApiResponse({ status: 404, description: 'Class not found' })
+  @ApiResponse({ status: 409, description: 'Already applied for this class' })
   async apply(
     @Request() req: RequestWithUser,
     @Body() dto: CreateApplicationDto,
@@ -36,6 +49,11 @@ export class ApplicationController {
   }
 
   @Get('me')
+  @ApiOperation({ summary: "Get current user's applications" })
+  @ApiResponse({
+    status: 200,
+    description: "Returns list of user's applications",
+  })
   async findMyApplications(@Request() req: RequestWithUser) {
     return this.applicationService.findUserApplications(req.user.id);
   }
