@@ -58,4 +58,20 @@ export class ApplicationService {
       throw error;
     }
   }
+
+  async findUserApplications(userId: number) {
+    return this.prisma.application.findMany({
+      where: { userId },
+      include: {
+        class: {
+          include: {
+            sport: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
 }
