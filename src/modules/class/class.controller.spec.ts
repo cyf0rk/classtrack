@@ -126,7 +126,79 @@ describe('ClassController', () => {
       const response = await request(httpServer).get('/classes').expect(200);
 
       expect(response.body).toEqual(expectedResult);
-      expect(mockClassService.findAll).toHaveBeenCalled();
+      expect(mockClassService.findAll).toHaveBeenCalledWith();
+    });
+
+    it('should filter classes by a single sport', async () => {
+      const expectedResult = [{ id: 1, ...validCreateDto }];
+      mockClassService.findAll.mockResolvedValue(expectedResult);
+
+      const response = await request(httpServer)
+        .get('/classes?sports=baseball')
+        .expect(200);
+
+      expect(response.body).toEqual(expectedResult);
+      expect(mockClassService.findAll).toHaveBeenCalledWith({
+        sports: ['baseball'],
+      });
+    });
+
+    it('should filter classes by multiple sports', async () => {
+      const expectedResult = [{ id: 1, ...validCreateDto }];
+      mockClassService.findAll.mockResolvedValue(expectedResult);
+
+      const response = await request(httpServer)
+        .get('/classes?sports=basketball,football')
+        .expect(200);
+
+      expect(response.body).toEqual(expectedResult);
+      expect(mockClassService.findAll).toHaveBeenCalledWith({
+        sports: ['basketball', 'football'],
+      });
+    });
+
+    it('should convert sport names to lowercase', async () => {
+      const expectedResult = [{ id: 1, ...validCreateDto }];
+      mockClassService.findAll.mockResolvedValue(expectedResult);
+
+      const response = await request(httpServer)
+        .get('/classes?sports=Basketball,Football')
+        .expect(200);
+
+      expect(response.body).toEqual(expectedResult);
+      expect(mockClassService.findAll).toHaveBeenCalledWith({
+        sports: ['basketball', 'football'],
+      });
+    });
+
+    it('should ignore invalid sports format and return all classes', async () => {
+      const expectedResult = [
+        { id: 1, ...validCreateDto },
+        { id: 2, ...validCreateDto },
+      ];
+      mockClassService.findAll.mockResolvedValue(expectedResult);
+
+      const response = await request(httpServer)
+        .get('/classes?sports=basketball;football')
+        .expect(200);
+
+      expect(response.body).toEqual(expectedResult);
+      expect(mockClassService.findAll).toHaveBeenCalledWith();
+    });
+
+    it('should ignore non-alphabetic sports and return all classes', async () => {
+      const expectedResult = [
+        { id: 1, ...validCreateDto },
+        { id: 2, ...validCreateDto },
+      ];
+      mockClassService.findAll.mockResolvedValue(expectedResult);
+
+      const response = await request(httpServer)
+        .get('/classes?sports=basketball123,football')
+        .expect(200);
+
+      expect(response.body).toEqual(expectedResult);
+      expect(mockClassService.findAll).toHaveBeenCalledWith();
     });
   });
 
