@@ -5,6 +5,7 @@ import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
 import { NotFoundException } from '@nestjs/common';
 import { ScheduleDto } from './dto/schedule.dto';
+import { Prisma } from '../../generated/prisma';
 
 describe('ClassService', () => {
   let service: ClassService;
@@ -82,13 +83,14 @@ describe('ClassService', () => {
           title: validCreateDto.title,
           description: validCreateDto.description,
           capacity: validCreateDto.capacity,
-          schedule: validSchedule,
+          schedule: validSchedule as unknown as Prisma.InputJsonValue,
           sport: {
             connect: {
               id: validCreateDto.sportId,
             },
           },
         },
+        include: { sport: true },
       });
     });
   });
@@ -134,7 +136,10 @@ describe('ClassService', () => {
   describe('update', () => {
     it('should update a class with valid data', async () => {
       mockPrismaService.class.findUnique.mockResolvedValue(mockClass);
-      const updatedClass = { ...mockClass, ...validUpdateDto };
+      const updatedClass = { 
+        ...mockClass, 
+        ...validUpdateDto,
+      };
       mockPrismaService.class.update.mockResolvedValue(updatedClass);
 
       const result = await service.update(1, validUpdateDto);
@@ -146,13 +151,22 @@ describe('ClassService', () => {
           title: validUpdateDto.title,
           capacity: validUpdateDto.capacity,
         },
+        include: { sport: true },
       });
     });
 
     it('should update a class with sport change', async () => {
       mockPrismaService.class.findUnique.mockResolvedValue(mockClass);
       const updateWithSport = { ...validUpdateDto, sportId: 2 };
-      const updatedClass = { ...mockClass, ...updateWithSport };
+      const updatedClass = { 
+        ...mockClass, 
+        sport: {
+          id: 2,
+          name: 'New Sport',
+          description: 'New sport description',
+        },
+        ...validUpdateDto,
+      };
       mockPrismaService.class.update.mockResolvedValue(updatedClass);
 
       const result = await service.update(1, updateWithSport);
@@ -169,6 +183,7 @@ describe('ClassService', () => {
             },
           },
         },
+        include: { sport: true },
       });
     });
 
