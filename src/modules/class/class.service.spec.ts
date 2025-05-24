@@ -48,6 +48,8 @@ describe('ClassService', () => {
       id: 1,
       name: 'Basketball',
       description: 'Basketball sport',
+      createdAt: new Date(),
+      updatedAt: new Date(),
     },
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -97,10 +99,49 @@ describe('ClassService', () => {
 
   describe('findAll', () => {
     it('should return an array of classes with their sports', async () => {
-      const mockClasses = [mockClass, { ...mockClass, id: 2 }];
+      const mockClasses = [
+        mockClass,
+        { ...mockClass, id: 2, sport: { ...mockClass.sport, id: 2 } },
+      ];
       mockPrismaService.class.findMany.mockResolvedValue(mockClasses);
 
       const result = await service.findAll();
+
+      expect(result).toEqual(mockClasses);
+      expect(mockPrismaService.class.findMany).toHaveBeenCalledWith({
+        include: { sport: true },
+      });
+    });
+
+    it('should filter classes by sports when sports parameter is provided', async () => {
+      const mockClasses = [mockClass];
+      mockPrismaService.class.findMany.mockResolvedValue(mockClasses);
+      const query = { sports: ['Basketball'] };
+
+      const result = await service.findAll(query);
+
+      expect(result).toEqual(mockClasses);
+      expect(mockPrismaService.class.findMany).toHaveBeenCalledWith({
+        where: {
+          sport: {
+            name: {
+              in: ['Basketball'],
+            },
+          },
+        },
+        include: { sport: true },
+      });
+    });
+
+    it('should return all classes when sports parameter is empty', async () => {
+      const mockClasses = [
+        mockClass,
+        { ...mockClass, id: 2, sport: { ...mockClass.sport, id: 2 } },
+      ];
+      mockPrismaService.class.findMany.mockResolvedValue(mockClasses);
+      const query = { sports: [] };
+
+      const result = await service.findAll(query);
 
       expect(result).toEqual(mockClasses);
       expect(mockPrismaService.class.findMany).toHaveBeenCalledWith({
