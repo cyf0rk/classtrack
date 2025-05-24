@@ -6,6 +6,10 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
+import {
+  UpdateApplicationDto,
+  ApplicationStatus,
+} from './dto/update-application.dto';
 import { Prisma } from 'db';
 
 @Injectable()
@@ -71,6 +75,63 @@ export class ApplicationService {
       },
       orderBy: {
         createdAt: 'desc',
+      },
+    });
+  }
+
+  async updateStatus(applicationId: number, dto: UpdateApplicationDto) {
+    // Check if application exists and get approved applications count
+    const application = await this.prisma.application.findUnique({
+      where: { id: applicationId },
+      include: {
+        class: {
+          include: {
+            _count: {
+              select: {
+                applications: {
+                  where: {
+                    status: ApplicationStatus.APPROVED,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
+
+    if (
+      dto.status === ApplicationStatus.APPROVED &&
+      (application.status as ApplicationStatus) !== ApplicationStatus.APPROVED
+    ) {
+      // Check if class is full
+      if (application.class._count.applications >= application.class.capacity) {
+        throw new BadRequestException(
+          'Cannot approve application: class is at full capacity',
+        );
+      }
+    }
+
+    return this.prisma.application.update({
+      where: { id: applicationId },
+      data: { status: dto.status },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+          },
+        },
+        class: {
+          include: {
+            sport: true,
+          },
+        },
       },
     });
   }
