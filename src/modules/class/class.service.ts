@@ -3,6 +3,8 @@ import { PrismaService } from '../../database/prisma.service';
 import { CreateClassDto, UpdateClassDto, GetClassesQueryDto } from './dto';
 import { Prisma, Class, Sport } from '../../generated/prisma';
 
+type ClassWithSport = Class & { sport: Sport };
+
 @Injectable()
 export class ClassService {
   constructor(private prisma: PrismaService) {}
@@ -49,21 +51,23 @@ export class ClassService {
     });
   }
 
-  async findAll(query?: GetClassesQueryDto): Promise<(Class & { sport: Sport })[]> {
-    const where: Prisma.ClassWhereInput = {};
+  async findAll(query?: GetClassesQueryDto): Promise<ClassWithSport[]> {
+    const findManyArgs: Prisma.ClassFindManyArgs = {
+      include: { sport: true },
+    };
     
-    if (query?.sports?.length) {
-      where.sport = {
-        name: {
-          in: query.sports,
+    // Only add where clause if sports are provided
+    if (query?.sports && query.sports.length > 0) {
+      findManyArgs.where = {
+        sport: {
+          name: {
+            in: query.sports,
+          },
         },
       };
     }
 
-    return this.prisma.class.findMany({
-      where,
-      include: { sport: true },
-    });
+    return this.prisma.class.findMany(findManyArgs) as Promise<ClassWithSport[]>;
   }
 
   async findOne(id: number): Promise<Class & { sport: Sport }> {
