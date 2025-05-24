@@ -3,6 +3,15 @@ import { Role } from 'db';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import type { UserResponse } from '../modules/user/types';
+import { UnauthorizedException } from '@nestjs/common';
+
+export interface RequestWithUser extends Request {
+  user: Partial<UserResponse>;
+}
+
+export type MockRequestWithUser = {
+  user?: Partial<UserResponse>;
+};
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -11,6 +20,8 @@ describe('AuthController', () => {
     register: jest.fn(),
     login: jest.fn(),
   };
+
+  const mockDate = new Date();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -31,12 +42,12 @@ describe('AuthController', () => {
   });
 
   describe('register', () => {
-    const mockUser: UserResponse = {
+    const mockUser: Partial<UserResponse> = {
       id: 1,
       email: 'test@example.com',
-      role: Role.USER as Role,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      role: Role.USER,
+      createdAt: mockDate,
+      updatedAt: mockDate,
     };
 
     it('should register a new user successfully', async () => {
@@ -68,28 +79,32 @@ describe('AuthController', () => {
   });
 
   describe('login', () => {
-    const mockUser = {
+    const mockUser: Partial<UserResponse> = {
+      id: 1,
       email: 'test@example.com',
-      password: 'hashedPassword',
       role: Role.USER,
+      createdAt: mockDate,
+      updatedAt: mockDate,
     };
 
-    it('should login successfully and return access token', async () => {
+    it('should login successfully and return access token', () => {
       const mockToken = { access_token: 'mock.jwt.token' };
-      mockAuthService.login.mockResolvedValue(mockToken);
+      mockAuthService.login.mockReturnValue(mockToken);
 
-      const result = await controller.login({ user: mockUser });
+      const mockRequest: MockRequestWithUser = { user: mockUser };
+      const result = controller.login(mockRequest as any);
 
       expect(result).toEqual(mockToken);
       expect(mockAuthService.login).toHaveBeenCalledWith(mockUser);
     });
 
     it('should handle login errors', async () => {
-      const error = new Error('Invalid credentials');
+      const error = new UnauthorizedException('Invalid username or password');
       mockAuthService.login.mockRejectedValue(error);
 
-      await expect(controller.login({ user: null })).rejects.toThrow(
-        'Invalid credentials',
+      const mockRequest: MockRequestWithUser = {};
+      await expect(controller.login(mockRequest as any)).rejects.toThrow(
+        'Invalid username or password',
       );
     });
   });
