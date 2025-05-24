@@ -1,13 +1,34 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ClassController } from './class.controller';
 import { ClassService } from './class.service';
+import { ApplicationService } from '../application/application.service';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
-import { ValidationPipe, INestApplication } from '@nestjs/common';
+import {
+  ValidationPipe,
+  INestApplication,
+  UnauthorizedException,
+  ForbiddenException,
+  NotFoundException,
+  ExecutionContext,
+} from '@nestjs/common';
 import { ScheduleDto } from './dto/schedule.dto';
 import { SessionDto } from './dto/session.dto';
 import * as request from 'supertest';
 import { Express } from 'express';
+import { Role } from 'db';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+
+interface RequestWithUser extends Request {
+  user: {
+    id: number;
+    email: string;
+    role: Role;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
 
 describe('ClassController', () => {
   let app: INestApplication;
@@ -19,6 +40,37 @@ describe('ClassController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+  };
+
+  const mockApplicationService = {
+    findClassApplications: jest.fn(),
+  };
+
+  const mockDate = new Date();
+  const mockUser = {
+    id: 1,
+    email: 'test@example.com',
+    role: Role.USER,
+    createdAt: mockDate.toISOString(),
+    updatedAt: mockDate.toISOString(),
+  };
+
+  const mockAdmin = {
+    id: 2,
+    email: 'admin@example.com',
+    role: Role.ADMIN,
+    createdAt: mockDate.toISOString(),
+    updatedAt: mockDate.toISOString(),
+  };
+
+  const mockApplication = {
+    id: 1,
+    userId: mockUser.id,
+    classId: 1,
+    status: 'pending',
+    createdAt: mockDate.toISOString(),
+    updatedAt: mockDate.toISOString(),
+    user: mockUser,
   };
 
   const validSchedule: ScheduleDto = {
@@ -50,8 +102,39 @@ describe('ClassController', () => {
           provide: ClassService,
           useValue: mockClassService,
         },
+        {
+          provide: ApplicationService,
+          useValue: mockApplicationService,
+        },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({
+        canActivate: (context: ExecutionContext) => {
+          const request: RequestWithUser = context.switchToHttp().getRequest();
+          if (request.headers['x-test-user']) {
+            request.user =
+              request.headers['x-test-user'] === 'admin' ? mockAdmin : mockUser;
+            return true;
+          }
+          throw new UnauthorizedException();
+        },
+      })
+      .overrideGuard(RolesGuard)
+      .useValue({
+        canActivate: (context: ExecutionContext) => {
+          const request: RequestWithUser = context.switchToHttp().getRequest();
+          const user = request.user;
+          if (!user) {
+            throw new UnauthorizedException();
+          }
+          if (user.role !== Role.ADMIN) {
+            throw new ForbiddenException();
+          }
+          return true;
+        },
+      })
+      .compile();
 
     app = module.createNestApplication();
     app.useGlobalPipes(
@@ -264,6 +347,54 @@ describe('ClassController', () => {
 
     it('should return 400 when id is not a number', async () => {
       await request(httpServer).delete('/classes/invalid').expect(400);
+    });
+  });
+
+  describe('GET /classes/:id/applications', () => {
+    it('should return applications for a class when user is admin', async () => {
+      const mockApplications = [mockApplication];
+      mockApplicationService.findClassApplications.mockResolvedValue(
+        mockApplications,
+      );
+
+      const response = await request(httpServer)
+        .get('/classes/1/applications')
+        .set('x-test-user', 'admin')
+        .expect(200);
+
+      expect(response.body).toEqual(mockApplications);
+      expect(mockApplicationService.findClassApplications).toHaveBeenCalledWith(
+        1,
+      );
+    });
+
+    it('should return 403 when user is not admin', async () => {
+      await request(httpServer)
+        .get('/classes/1/applications')
+        .set('x-test-user', 'user')
+        .expect(403);
+    });
+
+    it('should return 401 when no user is authenticated', async () => {
+      await request(httpServer).get('/classes/1/applications').expect(401);
+    });
+
+    it('should return 400 when class id is not a number', async () => {
+      await request(httpServer)
+        .get('/classes/invalid/applications')
+        .set('x-test-user', 'admin')
+        .expect(400);
+    });
+
+    it('should return 404 when class does not exist', async () => {
+      mockApplicationService.findClassApplications.mockRejectedValue(
+        new NotFoundException('Class not found'),
+      );
+
+      await request(httpServer)
+        .get('/classes/999/applications')
+        .set('x-test-user', 'admin')
+        .expect(404);
     });
   });
 });
