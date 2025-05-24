@@ -8,7 +8,7 @@ import {
   Delete,
   ParseIntPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { SportService } from './sport.service';
 import { CreateSportDto, UpdateSportDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -25,6 +25,7 @@ export class SportController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new sport' })
   @ApiResponse({ status: 201, description: 'Sport successfully created' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
@@ -50,6 +51,7 @@ export class SportController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a sport' })
   @ApiResponse({ status: 200, description: 'Sport successfully updated' })
   @ApiResponse({ status: 404, description: 'Sport not found' })
@@ -64,6 +66,7 @@ export class SportController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a sport' })
   @ApiResponse({ status: 200, description: 'Sport successfully deleted' })
   @ApiResponse({ status: 404, description: 'Sport not found' })
