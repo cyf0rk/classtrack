@@ -20,6 +20,10 @@ export class AuthController {
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({
+    status: 409,
+    description: 'User with this email already exists',
+  })
   async register(@Body() createUserDto: CreateUserDto) {
     return await this.authService.register(
       createUserDto.email,
