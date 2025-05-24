@@ -36,8 +36,9 @@ model Sport {
 model Class {
   id          Int           @id @default(autoincrement())
   sportId     Int
+  title       String
   schedule    Json
-  duration    Int          // Duration in minutes
+  capacity    Int
   description String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt

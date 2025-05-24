@@ -5,9 +5,16 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { AppConfigModule } from './config/config.module';
 import { SportModule } from './modules/sport/sport.module';
+import { ClassModule } from './modules/class/class.module';
 
 @Module({
-  imports: [AppConfigModule, DatabaseModule, AuthModule, SportModule],
+  imports: [
+    AppConfigModule,
+    DatabaseModule,
+    AuthModule,
+    SportModule,
+    ClassModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
