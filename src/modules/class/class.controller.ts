@@ -8,6 +8,7 @@ import {
   Delete,
   ParseIntPipe,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,15 +17,24 @@ import {
   ApiParam,
   ApiBody,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ClassService } from './class.service';
 import { CreateClassDto, UpdateClassDto } from './dto';
 import { GetClassesQueryDto } from './dto/get-classes-query.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from 'db';
+import { ApplicationService } from '../application/application.service';
 
 @ApiTags('Classes')
 @Controller('classes')
 export class ClassController {
-  constructor(private readonly service: ClassService) {}
+  constructor(
+    private readonly classService: ClassService,
+    private readonly applicationService: ApplicationService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new class' })
@@ -36,7 +46,7 @@ export class ClassController {
   })
   @ApiResponse({ status: 400, description: 'Invalid input data.' })
   create(@Body() createClassDto: CreateClassDto) {
-    return this.service.create(createClassDto);
+    return this.classService.create(createClassDto);
   }
 
   @Get()
@@ -54,9 +64,9 @@ export class ClassController {
   })
   findAll(@Query() query: GetClassesQueryDto) {
     if (!query?.sports) {
-      return this.service.findAll();
+      return this.classService.findAll();
     }
-    return this.service.findAll(query);
+    return this.classService.findAll(query);
   }
 
   @Get(':id')
@@ -70,7 +80,7 @@ export class ClassController {
   @ApiResponse({ status: 400, description: 'Invalid ID format.' })
   @ApiResponse({ status: 404, description: 'Class not found.' })
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.service.findOne(id);
+    return this.classService.findOne(id);
   }
 
   @Patch(':id')
@@ -88,7 +98,7 @@ export class ClassController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateClassDto: UpdateClassDto,
   ) {
-    return this.service.update(id, updateClassDto);
+    return this.classService.update(id, updateClassDto);
   }
 
   @Delete(':id')
@@ -102,6 +112,24 @@ export class ClassController {
   @ApiResponse({ status: 400, description: 'Invalid ID format.' })
   @ApiResponse({ status: 404, description: 'Class not found.' })
   remove(@Param('id', ParseIntPipe) id: number) {
-    return this.service.remove(id);
+    return this.classService.remove(id);
+  }
+
+  @Get(':id/applications')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all applications for a class (admin only)' })
+  @ApiParam({ name: 'id', type: 'number', description: 'Class ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all applications for the specified class',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid ID format' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Class not found' })
+  async findClassApplications(@Param('id', ParseIntPipe) id: number) {
+    return await this.applicationService.findClassApplications(id);
   }
 }
