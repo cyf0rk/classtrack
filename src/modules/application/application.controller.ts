@@ -14,6 +14,7 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
+  ApiParam,
 } from '@nestjs/swagger';
 import { ApplicationService } from './application.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
@@ -64,6 +65,14 @@ export class ApplicationController {
 
   @Patch(':id/status')
   @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Update application status (admin only)' })
+  @ApiParam({ name: 'id', description: 'Application ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Application status updated successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid status or class is full' })
+  @ApiResponse({ status: 404, description: 'Application not found' })
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateApplicationDto,
