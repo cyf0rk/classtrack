@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { CreateClassDto, UpdateClassDto } from './dto';
+import { CreateClassDto, UpdateClassDto, GetClassesQueryDto } from './dto';
 import { Prisma, Class, Sport } from '../../generated/prisma';
 
 @Injectable()
@@ -49,8 +49,19 @@ export class ClassService {
     });
   }
 
-  async findAll(): Promise<(Class & { sport: Sport })[]> {
+  async findAll(query?: GetClassesQueryDto): Promise<(Class & { sport: Sport })[]> {
+    const where: Prisma.ClassWhereInput = {};
+    
+    if (query?.sports?.length) {
+      where.sport = {
+        name: {
+          in: query.sports,
+        },
+      };
+    }
+
     return this.prisma.class.findMany({
+      where,
       include: { sport: true },
     });
   }

@@ -7,6 +7,7 @@ import {
   Patch,
   Delete,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,9 +15,11 @@ import {
   ApiResponse,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { ClassService } from './class.service';
 import { CreateClassDto, UpdateClassDto } from './dto';
+import { GetClassesQueryDto } from './dto/get-classes-query.dto';
 
 @ApiTags('Classes')
 @Controller('classes')
@@ -38,13 +41,18 @@ export class ClassController {
 
   @Get()
   @ApiOperation({ summary: 'Get all classes' })
+  @ApiQuery({ type: GetClassesQueryDto })
   @ApiResponse({
     status: 200,
     description: 'Return all classes with their associated sports.',
     type: [CreateClassDto],
   })
-  findAll() {
-    return this.service.findAll();
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid sports format. Must be comma-separated alphabetic values.',
+  })
+  findAll(@Query() query: GetClassesQueryDto) {
+    return this.service.findAll(query);
   }
 
   @Get(':id')
