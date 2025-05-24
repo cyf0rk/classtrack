@@ -1,7 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsNumber, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsObject,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { ScheduleDto } from './schedule.dto';
 
 export class CreateClassDto {
+  @ApiProperty({ example: 1 })
+  @IsNumber()
+  sportId: number;
+
   @ApiProperty({ example: 'Advanced Basketball' })
   @IsString()
   @IsNotEmpty()
@@ -9,23 +22,25 @@ export class CreateClassDto {
 
   @ApiProperty({ example: 'Master professional techniques' })
   @IsString()
-  description: string;
+  @IsOptional()
+  description?: string;
 
   @ApiProperty({
     example: {
-      days: ['Monday', 'Wednesday'],
-      startTime: '18:00',
-      duration: 90,
+      Monday: [
+        { startTime: '10:00', duration: 60 },
+        { startTime: '16:00', duration: 90 },
+      ],
+      Wednesday: [{ startTime: '17:30', duration: 60 }],
     },
+    description: 'Each day maps to an array of sessions',
   })
   @IsObject()
-  schedule: object;
+  @ValidateNested()
+  @Type(() => ScheduleDto)
+  schedule: ScheduleDto;
 
   @ApiProperty({ example: 20 })
   @IsNumber()
   capacity: number;
-
-  @ApiProperty({ example: 1 })
-  @IsNumber()
-  sportId: number;
 }
